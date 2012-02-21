@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	package="com.appspot.dishrev">
+	package="com.appspot.dishrev" android:versionCode="1"
+	android:versionName="1">
 	<application android:icon="@drawable/icon">
-		<activity android:name=".DishRevWebView" android:label="@string/app_name" android:configChanges="orientation">
+		<activity android:name=".DishRevWebView" android:label="@string/app_name"
+			android:configChanges="orientation">
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />
 				<category android:name="android.intent.category.LAUNCHER" />
