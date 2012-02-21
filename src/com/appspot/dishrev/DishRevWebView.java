@@ -3,12 +3,15 @@ package com.appspot.dishrev;
 import com.appspot.dishrev.R;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.res.Configuration;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.webkit.GeolocationPermissions;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebStorage;
@@ -24,6 +27,9 @@ public class DishRevWebView extends Activity {
 
 	private static final int MENU_REFRESH = 1;
 	private WebView mWebView;
+
+	private ValueCallback<Uri> mUploadMessage;
+	private final static int FILECHOOSER_RESULTCODE = 1;
 
 	@Override
 	public void onCreate(Bundle aBundle) {
@@ -64,6 +70,26 @@ public class DishRevWebView extends Activity {
 		mWebView.loadUrl("http://dishrev.appspot.com");
 	}
 
+	/**
+	 * Override for file upload.
+	 */
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode,
+			Intent intent) {
+		if (requestCode == FILECHOOSER_RESULTCODE) {
+			if (null == mUploadMessage)
+				return;
+			Uri result = intent == null || resultCode != RESULT_OK ? null
+					: intent.getData();
+			mUploadMessage.onReceiveValue(result);
+			mUploadMessage = null;
+
+		}
+	}
+
+	/**
+	 * Override configuration to avoid re-render when changing orientation.
+	 */
 	@Override
 	public void onConfigurationChanged(Configuration newConfig) {
 		super.onConfigurationChanged(newConfig);
@@ -116,24 +142,46 @@ public class DishRevWebView extends Activity {
 	}
 
 	/**
-	 * Chrome client for geo location and local storage.
+	 * Chrome client to link to device.
 	 */
 	private class DishRevWebChromeClient extends WebChromeClient {
 
+		/**
+		 * Geo location permission.
+		 */
 		public void onGeolocationPermissionsShowPrompt(String origin,
 				GeolocationPermissions.Callback callback) {
 			callback.invoke(origin, true, false);
 		}
 
+		/**
+		 * Database quota.
+		 */
 		public void onExceededDatabaseQuota(String url,
 				String databaseIdentifier, long currentQuota,
 				long estimatedSize, long totalUsedQuota,
 				WebStorage.QuotaUpdater quotaUpdater) {
 			quotaUpdater.updateQuota(5 * 1024 * 1024);
 		}
+
+		// The undocumented magic method override
+		// Eclipse will give error if @Override here
+		public void openFileChooser(ValueCallback<Uri> uploadMsg) {
+
+			mUploadMessage = uploadMsg;
+			Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+			i.addCategory(Intent.CATEGORY_OPENABLE);
+			i.setType("image/*");
+			startActivityForResult(Intent.createChooser(i, "Image Browser"),
+					FILECHOOSER_RESULTCODE);
+		}
 	}
 
 	private class DishRevViewClient extends WebViewClient {
+
+		/**
+		 * Override to keep links inside in the webview.
+		 */
 		@Override
 		public boolean shouldOverrideUrlLoading(WebView view, String url) {
 			return false;
